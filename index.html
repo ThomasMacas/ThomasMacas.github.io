@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetMetrics Internet Speed Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background-color: #fff;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        #ping-display {
+            font-size: 1.5em;
+            margin: 20px 0;
+            color: #555;
+        }
+        #start-btn {
+            padding: 10px 20px;
+            font-size: 1em;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #start-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NetMetrics Internet Speed Test</h1>
+        <div id="ping-display">Current Ping: <span id="ping-value">-</span> ms</div>
+        <button id="start-btn" onclick="startTest()">Start Test</button>
+    </div>
+
+    <script>
+        function startTest() {
+            const pingDisplay = document.getElementById('ping-value');
+            pingDisplay.textContent = "Testing...";
+            
+            const startTime = Date.now();
+            fetch("https://example.com") // Replace with an actual server endpoint
+                .then(() => {
+                    const ping = Date.now() - startTime;
+                    pingDisplay.textContent = ping + " ms";
+                })
+                .catch(() => {
+                    pingDisplay.textContent = "Error";
+                });
+        }
+    </script>
+</body>
+</html>
