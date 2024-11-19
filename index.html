@@ -47,6 +47,7 @@
 <body>
     <div class="container">
         <h1>NetMetrics Internet Speed Test</h1>
+        <input type="text" id="text-input">
         <div id="ping-display">Current Ping: <span id="ping-value">-</span> ms</div>
         <button id="start-btn" onclick="PingURL()">Start Test</button>
     </div>
@@ -55,8 +56,9 @@
         // Uses FetchAPI to send an HTTP request to given URL and reports server response time
         async function PingURL(){
             const pingDisplay = document.getElementById('ping-value');
+            const input = document.getElementById('text-input');
 
-            const url = "https://www.youtube.com/";
+            let url = input.value
 
             try{
                 var startTime = performance.now();  // time before request
@@ -71,16 +73,18 @@
 
                 var endTime = performance.now();    // time after receieved
 
-                //if(!response.ok){
-                //    throw new Error(`Response status: ${response.status}`);     // if we care about checking errors in response
-                //}
+                if(!response.ok){
+                    if(response.status != 0){
+                        throw new Error(`Response status: ${response.status}`);     // throw any non-CORB error
+                    }
+                }
 
                 var ping = endTime - startTime;
-                pingDisplay.textContent = ping + " ms";
+                pingDisplay.textContent = ping;
             }
             catch(error){
                 // decide what to do with errors
-                pingDisplay.textContent = "error: " + error;
+                pingDisplay.textContent = error;
             }
         }
 
