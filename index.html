@@ -52,27 +52,8 @@
     </div>
 
     <script>
-        /*
-        function startTest() {
-            const pingDisplay = document.getElementById('ping-value');
-            pingDisplay.textContent = "Testing...";
-            
-            const startTime = Date.now();
-            fetch("https://example.com") // Replace with an actual server endpoint
-                .then(() => {
-                    const ping = Date.now() - startTime;
-                    pingDisplay.textContent = ping + " ms";
-                })
-                .catch(() => {
-                    pingDisplay.textContent = "Error";
-                });
-        }
-        */
-
         // Uses FetchAPI to send an HTTP request to given URL and reports server response time
         async function PingURL(){
-            //const { performance } = require('perf_hooks');
-
             const pingDisplay = document.getElementById('ping-value');
 
             const url = "https://www.youtube.com/";
@@ -80,15 +61,20 @@
             try{
                 var startTime = performance.now();  // time before request
 
-                const response = await fetch(url, { mode: 'no-cors'});  // FetchAPI call (HTTP request)
+                const response = await fetch(url, { method: "HEAD", mode: 'no-cors'});  // FetchAPI call (HTTP request)
 
-                var endTime = performance.now();    // time after receieved (****Hopefully*****)
+                /*
+                    CORB will block in response to fetch. It blocks the browser from receiving the response, but the request should
+                    be reaching the desired server and coming back before being flagged by CORB (I think). There is probably some
+                    overhead involved in the time reported if the previous assumptions are true.
+                */
 
-                if(!response.ok){
-                    throw new Error(`Response status: ${response.status}`);     // if we care about checking errors in response
-                }
+                var endTime = performance.now();    // time after receieved
 
-                //console.log(`RTT for ${url} took ${endTime - startTime} milliseconds`);
+                //if(!response.ok){
+                //    throw new Error(`Response status: ${response.status}`);     // if we care about checking errors in response
+                //}
+
                 var ping = endTime - startTime;
                 pingDisplay.textContent = ping + " ms";
             }
