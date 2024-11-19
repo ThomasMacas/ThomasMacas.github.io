@@ -48,10 +48,11 @@
     <div class="container">
         <h1>NetMetrics Internet Speed Test</h1>
         <div id="ping-display">Current Ping: <span id="ping-value">-</span> ms</div>
-        <button id="start-btn" onclick="startTest()">Start Test</button>
+        <button id="start-btn" onclick="PingURL()">Start Test</button>
     </div>
 
     <script>
+        /*
         function startTest() {
             const pingDisplay = document.getElementById('ping-value');
             pingDisplay.textContent = "Testing...";
@@ -66,6 +67,37 @@
                     pingDisplay.textContent = "Error";
                 });
         }
+        */
+
+        // Uses FetchAPI to send an HTTP request to given URL and reports server response time
+        async function PingURL(){
+            //const { performance } = require('perf_hooks');
+
+            const pingDisplay = document.getElementById('ping-value');
+
+            const url = "https://www.youtube.com/";
+
+            try{
+                var startTime = performance.now();  // time before request
+
+                const response = await fetch(url, { mode: 'no-cors'});  // FetchAPI call (HTTP request)
+
+                var endTime = performance.now();    // time after receieved (****Hopefully*****)
+
+                if(!response.ok){
+                    throw new Error(`Response status: ${response.status}`);     // if we care about checking errors in response
+                }
+
+                //console.log(`RTT for ${url} took ${endTime - startTime} milliseconds`);
+                var ping = endTime - startTime;
+                pingDisplay.textContent = ping + " ms";
+            }
+            catch(error){
+                // decide what to do with errors
+                pingDisplay.textContent = "error: " + error;
+            }
+        }
+
     </script>
 </body>
 </html>
