@@ -39,6 +39,15 @@
             border-radius: 5px;
             cursor: pointer;
         }
+        #stop-btn {
+            padding: 10px 20px;
+            font-size: 1em;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
         #start-btn:hover {
             background-color: #0056b3;
         }
@@ -48,43 +57,66 @@
     <div class="container">
         <h1>NetMetrics Internet Speed Test</h1>
         <input type="text" id="text-input">
-        <div id="ping-display">Current Ping: <span id="ping-value">-</span> ms</div>
+        <div id="ping-display"> <span id="ping-value">-</span> </div>
         <button id="start-btn" onclick="PingURL()">Start Test</button>
+        <button id="stop-btn" onclick="setStop()">Stop Test</button>
     </div>
 
     <script>
+        var livePingUpdates = false;
+
+        function setStop(){
+            livePingUpdates = false;
+        }
+
+        function sleep(msTime){
+            var startTime = performance.now();
+            while(true){
+                if(performance.now() - startTime > msTime){
+                    break;
+                }
+            }
+        }
+        
         // Uses FetchAPI to send an HTTP request to given URL and reports server response time
         async function PingURL(){
             const pingDisplay = document.getElementById('ping-value');
             const input = document.getElementById('text-input');
+            livePingUpdates = true;
 
-            let url = input.value
+            let url = input.value;
 
-            try{
-                var startTime = performance.now();  // time before request
+            // input checking
+            if(url != ""){
+                while(livePingUpdates){
+                    try{
+                        var startTime = performance.now();  // time before request
 
-                const response = await fetch(url, { method: "HEAD", mode: 'no-cors'});  // FetchAPI call (HTTP request)
+                        const response = await fetch(url, { method: "GET", mode: 'no-cors'});  // FetchAPI call (HTTP request)
 
-                /*
-                    CORB will block in response to fetch. It blocks the browser from receiving the response, but the request should
-                    be reaching the desired server and coming back before being flagged by CORB (I think). There is probably some
-                    overhead involved in the time reported if the previous assumptions are true.
-                */
+                        /*
+                            CORB will block in response to fetch. It blocks the browser from receiving the response, but the request should
+                            be reaching the desired server and coming back before being flagged by CORB (I think). There is probably some
+                            overhead involved in the time reported if the previous assumptions are true.
+                        */
 
-                var endTime = performance.now();    // time after receieved
+                        var endTime = performance.now();    // time after receieved
 
-                if(!response.ok){
-                    if(response.status != 0){
-                        throw new Error(`Response status: ${response.status}`);     // throw any non-CORB error
+                        if(!response.ok){
+                            if(response.status != 0){
+                                throw new Error(`Response status: ${response.status}`);     // throw any non-CORB error
+                            }
+                        }
+
+                        var ping = endTime - startTime;
+                        pingDisplay.textContent = "Current ping: " + Number((ping).toFixed(1)) + "ms";
                     }
+                    catch(error){
+                        pingDisplay.textContent = error;
+                        livePingUpdates = false;
+                    }
+                    sleep(2000);
                 }
-
-                var ping = endTime - startTime;
-                pingDisplay.textContent = ping;
-            }
-            catch(error){
-                // decide what to do with errors
-                pingDisplay.textContent = error;
             }
         }
 
