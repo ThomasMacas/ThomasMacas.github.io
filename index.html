@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NetMetrics Internet Speed Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
@@ -21,16 +23,18 @@
             border-radius: 10px;
             background-color: #fff;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 800px;
         }
         h1 {
             color: #333;
         }
-        #ping-display {
+        #ping-display, #speed-display {
             font-size: 1.5em;
             margin: 20px 0;
             color: #555;
         }
-        #start-btn {
+        #start-btn, #stop-btn {
             padding: 10px 20px;
             font-size: 1em;
             color: #fff;
@@ -38,88 +42,194 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            margin: 5px;
         }
-        #stop-btn {
-            padding: 10px 20px;
-            font-size: 1em;
-            color: #fff;
-            background-color: #007bff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #start-btn:hover {
+        #start-btn:hover, #stop-btn:hover {
             background-color: #0056b3;
+        }
+        canvas {
+            margin-top: 20px;
+        }
+        .live-speed {
+            font-size: 1em;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>NetMetrics Internet Speed Test</h1>
-        <input type="text" id="text-input">
-        <div id="ping-display"> <span id="ping-value">-</span> </div>
-        <button id="start-btn" onclick="PingURL()">Start Test</button>
-        <button id="stop-btn" onclick="setStop()">Stop Test</button>
+        <input type="text" id="text-input" placeholder="Enter URL to test">
+        <div id="ping-display">Ping: <span id="ping-value">-</span></div>
+        <div id="speed-display">
+            <div class="live-speed">Upload Speed: <span id="upload-value">-</span> Mbps</div>
+            <div class="live-speed">Download Speed: <span id="download-value">-</span> Mbps</div>
+        </div>
+        <button id="start-btn" onclick="startTest()">Start Test</button>
+        <button id="stop-btn" onclick="stopTest()">Stop Test</button>
+        <canvas id="speedChart"></canvas>
     </div>
 
     <script>
         var livePingUpdates = false;
+        let liveSpeedUpdates = false;
 
-        function setStop(){
-            livePingUpdates = false;
-        }
+        let speedData = {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Upload Speed (Mbps)',
+                    data: [],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    fill: false
+                },
+                {
+                    label: 'Download Speed (Mbps)',
+                    data: [],
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    fill: false
+                }
+            ]
+        };
 
-        function sleep(msTime){
-            var startTime = performance.now();
-            while(true){
-                if(performance.now() - startTime > msTime){
-                    break;
+        let config = {
+            type: 'line',
+            data: speedData,
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time (s)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Speed (Mbps)'
+                        },
+                        beginAtZero: true
+                    }
                 }
             }
+        };
+
+        const ctx = document.getElementById('speedChart').getContext('2d');
+        const speedChart = new Chart(ctx, config);
+
+        async function measureDownloadSpeed() {
+            const startTime = performance.now();
+            const response = await fetch('http://speedtest.tele2.net/100MB.zip'); // Replace with a valid test file URL
+            const blob = await response.blob(); // Get the file size
+            const endTime = performance.now();
+            const fileSizeInBits = blob.size * 8; // Convert size from bytes to bits
+            const durationInSeconds = (endTime - startTime) / 1000;
+            const speedMbps = (fileSizeInBits / durationInSeconds / (1024 * 1024)).toFixed(2);
+            return parseFloat(speedMbps);
         }
-        
-        // Uses FetchAPI to send an HTTP request to given URL and reports server response time
-        async function PingURL(){
+
+        async function measureUploadSpeed() {
+            const data = new Uint8Array(1024 * 1024 * 5); // 5 MB file
+            const startTime = performance.now();
+            await fetch('https://httpbin.org/post', { // Replace with a valid upload endpoint
+                method: 'POST',
+                body: data
+            });
+            const endTime = performance.now();
+            const fileSizeInBits = data.length * 8; // Convert size from bytes to bits
+            const durationInSeconds = (endTime - startTime) / 1000;
+            const speedMbps = (fileSizeInBits / durationInSeconds / (1024 * 1024)).toFixed(2);
+            return parseFloat(speedMbps);
+        }
+
+        function stopTest() {
+            livePingUpdates = false;
+            liveSpeedUpdates = false;
+        }
+
+        async function startSpeedTest() {
+            liveSpeedUpdates = true;
+            let time = 0;
+            const uploadDisplay = document.getElementById('upload-value');
+            const downloadDisplay = document.getElementById('download-value');
+
+            while (liveSpeedUpdates && time < 5) { // Run the test for 5 seconds
+                const uploadSpeed = await measureUploadSpeed(); // Measure upload speed
+                const downloadSpeed = await measureDownloadSpeed(); // Measure download speed
+
+                // Update live speed display
+                uploadDisplay.textContent = uploadSpeed;
+                downloadDisplay.textContent = downloadSpeed;
+
+                // Push new data to the existing graph
+                speedData.labels.push(time.toFixed(2));
+                speedData.datasets[0].data.push(uploadSpeed);
+                speedData.datasets[1].data.push(downloadSpeed);
+
+                // Maintain a maximum of 20 data points on the graph
+                if (speedData.labels.length > 20) {
+                    speedData.labels.shift();
+                    speedData.datasets[0].data.shift();
+                    speedData.datasets[1].data.shift();
+                }
+
+                // Update the graph with the new data
+                speedChart.update();
+
+                // Increment time in seconds
+                time += 1;
+            }
+        }
+
+        async function PingURL() {
             const pingDisplay = document.getElementById('ping-value');
             const input = document.getElementById('text-input');
             livePingUpdates = true;
 
             let url = input.value;
 
-            // input checking
-            if(url != ""){
-                while(livePingUpdates){
-                    try{
-                        var startTime = performance.now();  // time before request
+            // Input checking
+            if (url != "") {
+                let timeElapsed = 0;
 
-                        const response = await fetch(url, { method: "GET", mode: 'no-cors'});  // FetchAPI call (HTTP request)
+                while (livePingUpdates && timeElapsed < 5) {
+                    try {
+                        var startTime = performance.now();
 
-                        /*
-                            CORB will block in response to fetch. It blocks the browser from receiving the response, but the request should
-                            be reaching the desired server and coming back before being flagged by CORB (I think). There is probably some
-                            overhead involved in the time reported if the previous assumptions are true.
-                        */
+                        const response = await fetch(url, { method: "GET", mode: 'no-cors' }); // FetchAPI call (HTTP request)
 
-                        var endTime = performance.now();    // time after receieved
+                        var endTime = performance.now();
 
-                        if(!response.ok){
-                            if(response.status != 0){
-                                throw new Error(`Response status: ${response.status}`);     // throw any non-CORB error
+                        if (!response.ok) {
+                            if (response.status != 0) {
+                                throw new Error(`Response status: ${response.status}`); // Throw any non-CORB error
                             }
                         }
 
                         var ping = endTime - startTime;
-                        pingDisplay.textContent = "Current ping: " + Number((ping).toFixed(1)) + "ms";
-                    }
-                    catch(error){
+
+                        pingDisplay.textContent = `${ping.toFixed(1)} ms`;
+                    } catch (error) {
                         pingDisplay.textContent = error;
                         livePingUpdates = false;
                     }
-                    sleep(2000);
+
+                    timeElapsed += 1;
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             }
         }
 
+        function startTest() {
+            startSpeedTest();
+            PingURL();
+
+            // Automatically stop after 5 seconds
+            //setTimeout(stopTest, 5000);
+        }
     </script>
 </body>
 </html>
