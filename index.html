@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>NetMetrics Internet Speed Test</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -121,14 +122,24 @@
         const speedChart = new Chart(ctx, config);
 
         async function measureDownloadSpeed() {
-            const startTime = performance.now();
-            const response = await fetch('http://speedtest.tele2.net/100MB.zip'); // Replace with a valid test file URL
-            const blob = await response.blob(); // Get the file size
-            const endTime = performance.now();
-            const fileSizeInBits = blob.size * 8; // Convert size from bytes to bits
-            const durationInSeconds = (endTime - startTime) / 1000;
-            const speedMbps = (fileSizeInBits / durationInSeconds / (1024 * 1024)).toFixed(2);
-            return parseFloat(speedMbps);
+            try{
+                const startTime = performance.now();
+
+                const response = await fetch('http://speedtest.tele2.net/100MB.zip', { method: "GET", mode: 'no-cors' }); // Replace with a valid test file URL
+                if(!response.ok){
+                    throw new Error(`Response status: ${response.status}`);
+                }
+
+                const blob = await response.blob(); // Get the file size
+                const endTime = performance.now();
+                const fileSizeInBits = blob.size * 8; // Convert size from bytes to bits
+                const durationInSeconds = (endTime - startTime) / 1000;
+                const speedMbps = (fileSizeInBits / durationInSeconds / (1024 * 1024)).toFixed(2);
+                return parseFloat(speedMbps);
+            }
+            catch(error){
+                console.log(error);
+            }
         }
 
         async function measureUploadSpeed() {
