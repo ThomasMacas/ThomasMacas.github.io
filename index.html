@@ -125,11 +125,9 @@
             try{
                 const startTime = performance.now();
 
-                const response = await fetch('https://cors-anywhere.herokuapp.com/https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06hid.csv', { method: "GET", mode: 'no-cors' }); // Replace with a valid test file URL
+                const response = await fetch('https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06hid.csv', { method: "GET", mode: 'no-cors' }); // Replace with a valid test file URL
                 if(!response.ok){
-                    //if(response.status != 0){
-                        throw new Error(`Response status: ${response.status}`);
-                    //}
+                    throw new Error(`Response status: ${response.status}`);
                 }
 
                 const blob = await response.blob(); // Get the file size
